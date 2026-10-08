@@ -1,0 +1,131 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             (!('email' in data) || (data.email is string && data.email.size() <= 256)) &&
+             (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 128)) &&
+             (!('updatedAt' in data) || (data.updatedAt is timestamp && data.updatedAt <= request.time));
+    }
+
+    function isValidPriority(data) {
+      return data.id is string && isValidId(data.id) &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 50 &&
+             data.colorHex is string && data.colorHex.size() >= 4 && data.colorHex.size() <= 16 &&
+             data.rank is int && data.rank >= 0 && data.rank <= 1000 &&
+             (!('iconName' in data) || (data.iconName is string && data.iconName.size() <= 64)) &&
+             (!('updatedAt' in data) || (data.updatedAt is timestamp && data.updatedAt <= request.time));
+    }
+
+    function isValidTask(data) {
+      return data.id is string && isValidId(data.id) &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+             data.completed is bool &&
+             data.priorityId is string && isValidId(data.priorityId) &&
+             data.priorityName is string && data.priorityName.size() >= 1 && data.priorityName.size() <= 50 &&
+             data.priorityRank is int && data.priorityRank >= 0 && data.priorityRank <= 1000 &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 2000)) &&
+             (!('priorityColor' in data) || (data.priorityColor is string && data.priorityColor.size() <= 32)) &&
+             (!('category' in data) || (data.category is string && data.category.size() <= 100)) &&
+             (!('dueDate' in data) || data.dueDate == null || (data.dueDate is timestamp)) &&
+             (!('completedAt' in data) || data.completedAt == null || (data.completedAt is timestamp && data.completedAt <= request.time)) &&
+             (!('updatedAt' in data) || (data.updatedAt is timestamp && data.updatedAt <= request.time));
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn() && request.auth.uid == userId;
+
+      allow create: if isSignedIn() &&
+                       request.auth.uid == userId &&
+                       incoming().userId == userId &&
+                       incoming().keys().hasAll(['userId', 'createdAt']) &&
+                       incoming().keys().hasOnly(['userId', 'email', 'displayName', 'createdAt', 'updatedAt']) &&
+                       incoming().createdAt is timestamp &&
+                       incoming().createdAt <= request.time &&
+                       isValidUserProfile(incoming());
+
+      allow update: if isSignedIn() &&
+                       request.auth.uid == userId &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       isValidUserProfile(incoming()) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['email', 'displayName', 'updatedAt']);
+
+      allow delete: if isSignedIn() && request.auth.uid == userId;
+
+      match /priorities/{priorityId} {
+        allow get, list: if isSignedIn() && request.auth.uid == userId;
+
+        allow create: if isSignedIn() &&
+                         request.auth.uid == userId &&
+                         isValidId(priorityId) &&
+                         incoming().userId == userId &&
+                         incoming().id == priorityId &&
+                         incoming().keys().hasAll(['id', 'userId', 'name', 'colorHex', 'rank', 'createdAt']) &&
+                         incoming().keys().hasOnly(['id', 'userId', 'name', 'colorHex', 'rank', 'iconName', 'createdAt', 'updatedAt']) &&
+                         incoming().createdAt is timestamp &&
+                         incoming().createdAt <= request.time &&
+                         isValidPriority(incoming());
+
+        allow update: if isSignedIn() &&
+                         request.auth.uid == userId &&
+                         isValidId(priorityId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidPriority(incoming()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['name', 'colorHex', 'rank', 'iconName', 'updatedAt']);
+
+        allow delete: if isSignedIn() && request.auth.uid == userId && isValidId(priorityId);
+      }
+
+      match /tasks/{taskId} {
+        allow get, list: if isSignedIn() && request.auth.uid == userId;
+
+        allow create: if isSignedIn() &&
+                         request.auth.uid == userId &&
+                         isValidId(taskId) &&
+                         incoming().userId == userId &&
+                         incoming().id == taskId &&
+                         incoming().keys().hasAll(['id', 'userId', 'title', 'completed', 'priorityId', 'priorityName', 'priorityRank', 'createdAt']) &&
+                         incoming().keys().hasOnly(['id', 'userId', 'title', 'description', 'completed', 'priorityId', 'priorityName', 'priorityColor', 'priorityRank', 'category', 'dueDate', 'completedAt', 'createdAt', 'updatedAt']) &&
+                         incoming().createdAt is timestamp &&
+                         incoming().createdAt <= request.time &&
+                         isValidTask(incoming());
+
+        allow update: if isSignedIn() &&
+                         request.auth.uid == userId &&
+                         isValidId(taskId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidTask(incoming()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'completed', 'priorityId', 'priorityName', 'priorityColor', 'priorityRank', 'category', 'dueDate', 'completedAt', 'updatedAt']);
+
+        allow delete: if isSignedIn() && request.auth.uid == userId && isValidId(taskId);
+      }
+    }
+  }
+}

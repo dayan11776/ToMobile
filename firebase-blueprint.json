@@ -1,0 +1,158 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The unique Firebase Auth UID"
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User display name"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when user was created. Client writes FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when user was updated. Client writes FieldValue.serverTimestamp()."
+        }
+      },
+      "required": ["userId", "createdAt"]
+    },
+    "Priority": {
+      "title": "Priority",
+      "description": "Custom priority level for ordering and coloring tasks",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Priority identifier"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner UID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Priority level name"
+        },
+        "colorHex": {
+          "type": "string",
+          "description": "Hex color string (e.g. #FF5252)"
+        },
+        "rank": {
+          "type": "integer",
+          "description": "Priority rank order (higher means higher priority, e.g. 1-100)"
+        },
+        "iconName": {
+          "type": "string",
+          "description": "Optional icon identifier"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when priority was created. Client writes FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when priority was updated. Client writes FieldValue.serverTimestamp()."
+        }
+      },
+      "required": ["id", "userId", "name", "colorHex", "rank", "createdAt"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "A todo task item synced across devices",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Task identifier"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner UID"
+        },
+        "title": {
+          "type": "string",
+          "description": "Task title"
+        },
+        "description": {
+          "type": "string",
+          "description": "Task notes / details"
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Whether the task is completed"
+        },
+        "priorityId": {
+          "type": "string",
+          "description": "Reference ID to priority"
+        },
+        "priorityName": {
+          "type": "string",
+          "description": "Denormalized priority label for quick display"
+        },
+        "priorityColor": {
+          "type": "string",
+          "description": "Denormalized priority color hex"
+        },
+        "priorityRank": {
+          "type": "integer",
+          "description": "Denormalized priority rank for sorting"
+        },
+        "category": {
+          "type": "string",
+          "description": "Task category or tag"
+        },
+        "dueDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Optional task due date"
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when task was marked completed. Client writes FieldValue.serverTimestamp()."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when task was created. Client writes FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when task was updated. Client writes FieldValue.serverTimestamp()."
+        }
+      },
+      "required": ["id", "userId", "title", "completed", "priorityId", "priorityName", "priorityRank", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User account document"
+    },
+    "/users/{userId}/priorities/{priorityId}": {
+      "schema": "Priority",
+      "description": "Custom priority levels configured by the user"
+    },
+    "/users/{userId}/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "User's synced todo tasks"
+    }
+  }
+}

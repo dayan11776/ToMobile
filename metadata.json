@@ -1,0 +1,6 @@
+{
+  "name": "PrioriTask",
+  "description": "Cross-device synced todo app with custom priority levels and real-time updates.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
